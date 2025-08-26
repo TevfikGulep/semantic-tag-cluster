@@ -22,7 +22,10 @@
     text-align: center;
 }
 
-.semantic-tag-cluster-button:hover {
-    background-color: currentColor; /* Hover'da rengi doldur */
-    color: #fff; /* Yazı rengini beyaza çevir */
+
+/* Sidebar widget içinde kullanıldığında butonların genişliği %100 olsun */
+#sidebar .semantic-tag-cluster-buttons .semantic-tag-cluster-button {
+    width: 100%;
+    display: block; /* Genişliğin uygulanması için display block olmalı */
+    box-sizing: border-box; /* Padding ve border'ın genişliğe dahil edilmesi için */
 }
