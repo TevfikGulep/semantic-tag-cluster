@@ -58,7 +58,7 @@ Eklentiyi kenar çubuğunuzda veya diğer widget alanlarınızda kullanmak için
 
 Eklenti, butonların stilini yönetmek için `semantic-tag-cluster.css` dosyasını kullanır. Butonlar, `<h1>` etiketinin rengini ve temanızın genel stilini miras alacak şekilde tasarlanmıştır (`color: inherit; border-color: inherit;`). Temanızın `h1` rengi değiştikçe, butonlar da otomatik olarak bu renge uyum sağlayacaktır.
 
-Sidebar widget'ı içinde kullanıldığında, butonların genişliği otomatik olarak %100 olacak şekilde ek bir CSS kuralı (`.widget .semantic-tag-cluster-buttons .semantic-tag-cluster-button`) eklenmiştir.
+Sidebar widget'ı içinde kullanıldığında, butonların genişliği otomatik olarak %100 olacak şekilde ek bir CSS kuralı (`#sidebar .semantic-tag-cluster-buttons .semantic-tag-cluster-button`) eklenmiştir.
 
 Daha fazla özelleştirme yapmak isterseniz, temanızın `style.css` dosyasına veya WordPress tema özelleştiricisindeki ek CSS alanına kendi CSS kodlarınızı ekleyerek `semantic-tag-cluster-buttons` ve `semantic-tag-cluster-button` sınıflarını hedefleyebilirsiniz.
 
