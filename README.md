@@ -1,11 +1,11 @@
 # Semantic Tag Cluster
 
-**Plugin URI:** https://github.com/TevfikGulep/semantic-tag-cluster
-**Yazar:** Tevfik Gülep
-**Yazar URI:** https://oxigen.team
-**Sürüm:** 1.0.0
-**Lisans:** GPL-2.0+
-**Lisans URI:** http://www.gnu.org/licenses/gpl-2.0.txt
+*   **Plugin URI:** https://github.com/TevfikGulep/semantic-tag-cluster
+*   **Yazar:** Tevfik Gülep
+*   **Yazar URI:** https://oxigen.team
+*   **Sürüm:** 1.0.0
+*   **Lisans:** GPL-2.0+
+*   **Lisans URI:** http://www.gnu.org/licenses/gpl-2.0.txt
 
 ---
 
@@ -67,4 +67,4 @@ Hersel sorunla karşılaşırsanız veya geliştirme önerileriniz olursa, lütf
 
 ---
 
-**© 2024 Tevfik Gülep. Tüm hakları saklıdır.**
+**© 2025 Tevfik Gülep. Tüm hakları saklıdır.**
