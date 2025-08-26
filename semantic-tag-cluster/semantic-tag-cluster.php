@@ -47,7 +47,8 @@ add_action('admin_init', 'stc_register_settings');
 function stc_register_settings() {
     register_setting(
         'stc_settings_group', // Ayar grubu
-        'stc_settings' // Ayar adı (veritabanında saklanacak)
+        'stc_settings', // Ayar adı (veritabanında saklanacak)
+        'stc_sanitize_settings' // Temizleme callback fonksiyonu eklendi
     );
 
     add_settings_section(
@@ -168,6 +169,48 @@ function stc_button_count_callback() {
     <?php
 }
 
+// Ayarları temizleme (sanitization) fonksiyonu eklendi
+function stc_sanitize_settings($input) {
+    $output = array();
+
+    // post_types temizleme
+    if (isset($input['post_types']) && is_array($input['post_types'])) {
+        $output['post_types'] = array_map('sanitize_text_field', $input['post_types']);
+    } else {
+        $output['post_types'] = array(); // Varsayılan değer
+    }
+
+    // link_post_type temizleme
+    if (isset($input['link_post_type'])) {
+        $output['link_post_type'] = sanitize_text_field($input['link_post_type']);
+    } else {
+        $output['link_post_type'] = 'post'; // Varsayılan değer
+    }
+
+    // link_category temizleme
+    if (isset($input['link_category'])) {
+        $output['link_category'] = absint($input['link_category']); // Sadece pozitif tamsayılar
+    } else {
+        $output['link_category'] = ''; // Varsayılan değer
+    }
+
+    // button_count temizleme
+    if (isset($input['button_count'])) {
+        $output['button_count'] = intval($input['button_count']);
+        // Minimum 1, maksimum 5 arasında tut
+        if ($output['button_count'] < 1) {
+            $output['button_count'] = 1;
+        } elseif ($output['button_count'] > 5) {
+            $output['button_count'] = 5;
+        }
+    } else {
+        $output['button_count'] = 3; // Varsayılan değer
+    }
+
+    return $output;
+}
+
+
 // Output buffering'i başlat
 add_action('template_redirect', 'stc_start_output_buffer');
 function stc_start_output_buffer() {
@@ -184,32 +227,27 @@ function stc_start_output_buffer() {
 
 // Çıktıyı yakala ve işleme
 function stc_process_page_output($buffer) {
-    error_log('stc_process_page_output fonksiyonu çalışıyor.');
-
     // Eklenti ayarlarını al
     $options = get_option('stc_settings');
     $enabled_post_types = isset($options['post_types']) ? (array) $options['post_types'] : array();
     $link_post_type = isset($options['link_post_type']) ? $options['link_post_type'] : 'post';
     $link_category = isset($options['link_category']) && !empty($options['link_category']) ? intval($options['link_category']) : null;
-    $button_count = isset($options['button_count']) ? intval($options['button_count']) : 3;
+    $button_count = isset($options['button']) ? intval($options['button_count']) : 3;
 
     // is_singular() kontrolü add_action hook'unda zaten yapıldığı için burada teorik olarak tekrar kontrol etmeye gerek yok
     // ama garanti olması açısından eklenti içerisinde bir koruma olarak kalabilir.
     if (!in_array(get_post_type(), $enabled_post_types)) {
-        error_log('OB: Mevcut gönderi tipi (' . get_post_type() . ') seçili tipler arasında değil. Tampon işlenmiyor.');
         return $buffer;
     }
 
     $current_post_id = get_the_ID();
     if (!$current_post_id) {
-        error_log('OB: Mevcut gönderi ID'si alınamadı. Butonlar eklenmiyor.');
         return $buffer;
     }
 
     $buttons_html = stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $link_category, $button_count);
 
     if (empty($buttons_html)) {
-        error_log('OB: Buton HTML'i boş döndü. İçerik değiştirilmiyor.');
         return $buffer;
     }
 
@@ -217,19 +255,13 @@ function stc_process_page_output($buffer) {
     if (preg_match('/<h1.*?>(.*?)<\/h1>/is', $buffer, $matches)) {
         $h1_tag = $matches[0];
         $buffer = str_replace($h1_tag, $h1_tag . $buttons_html, $buffer);
-        error_log('OB: H1 başlığı bulundu ve butonlar eklendi.');
-    } else {
-        error_log('OB: H1 başlığı bulunamadı. Butonlar eklenmedi. Sayfa içeriği ilk 500 karakter: ' . substr($buffer, 0, 500));
     }
 
-    error_log('stc_process_page_output fonksiyonu sona erdi.');
     return $buffer;
 }
 
 // Butonları oluşturan yardımcı fonksiyon
 function stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $link_category, $button_count) {
-    error_log('stc_generate_semantic_buttons_html fonksiyonu çalışıyor. Current Post ID: ' . $current_post_id);
-
     // Alakalı yazıları bulma sorgusu için argümanlar
     $args = array(
         'post_type' => $link_post_type,
@@ -241,7 +273,6 @@ function stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $
     // Eğer kategori belirlenmişse sorguya ekle
     if ($link_category) {
         $args['cat'] = $link_category;
-        error_log('Helper: Belirli kategoriye göre filtreleniyor. Kategori ID: ' . $link_category);
     }
 
     // İlgili yazıları sorgula
@@ -250,22 +281,17 @@ function stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $
 
     // Eğer ilgili yazı yoksa veya sadece şu anki yazı varsa geri dön
     if (empty($related_post_ids)) {
-        error_log('Helper: İlgili gönderi tipi ve kategoride alakalı yazı bulunamadı (mevcut hariç).');
         return '';
     }
-
-    error_log('Helper: Toplam ' . count($related_post_ids) . ' adet potansiyel alakalı yazı bulundu.');
 
     // Şu anki yazının içeriğini al
     $current_post = get_post($current_post_id);
     if (!$current_post) {
-        error_log('Helper: Mevcut gönderi nesnesi alınamadı.');
         return '';
     }
     // İçeriği temizle ve kelimelere ayır
-    $current_content = strip_tags(strip_shortcodes($current_post->post_content . ' ' . $current_post->post_title));
+    $current_content = wp_strip_all_tags(strip_shortcodes($current_post->post_content . ' ' . $current_post->post_title));
     $current_content_words = array_unique(preg_split('/\s+/', mb_strtolower($current_content), -1, PREG_SPLIT_NO_EMPTY));
-    error_log('Helper: Mevcut gönderi içeriğindeki benzersiz kelime sayısı: ' . count($current_content_words));
 
 
     // Alakalı yazıların alaka düzeylerini hesapla
@@ -274,7 +300,7 @@ function stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $
         $post = get_post($post_id);
         if (!$post) continue; // Geçersiz gönderi ise atla
 
-        $post_content = strip_tags(strip_shortcodes($post->post_content . ' ' . $post->post_title));
+        $post_content = wp_strip_all_tags(strip_shortcodes($post->post_content . ' ' . $post->post_title));
         $post_content_words = array_unique(preg_split('/\s+/', mb_strtolower($post_content), -1, PREG_SPLIT_NO_EMPTY));
 
         // Basit kelime eşleştirme ile alaka düzeyini hesapla
@@ -286,8 +312,6 @@ function stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $
         }
     }
 
-    error_log('Helper: Alaka puanı olan toplam ' . count($related_posts_with_score) . ' adet yazı bulundu.');
-
     // Alaka düzeyine göre sırala (büyükten küçüğe)
     arsort($related_posts_with_score);
 
@@ -296,7 +320,6 @@ function stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $
 
     // Eğer hiç alakalı yazı bulunamazsa geri dön
     if (empty($top_related_post_ids)) {
-        error_log('Helper: Alaka puanı olan alakalı yazı (seçilen buton sayısı kadar) bulunamadı. Butonlar oluşturulmuyor.');
         return '';
     }
 
@@ -310,7 +333,6 @@ function stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $
         }
     }
     $buttons_html .= '</div>';
-    error_log('Helper: Buton HTML'i başarıyla oluşturuldu.');
 
     return $buttons_html;
 }
@@ -324,3 +346,70 @@ function stc_enqueue_styles() {
     $css_url = plugin_dir_url(__FILE__) . 'css/semantic-tag-cluster.css';
     wp_enqueue_style('semantic-tag-cluster-style', $css_url);
 }
+
+// Widget sınıfını tanımla
+class stc_semantic_buttons_widget extends WP_Widget {
+
+    function __construct() {
+        parent::__construct(
+            'stc_semantic_buttons_widget', // Base ID
+            __('Semantic Tag Cluster Buttons', 'semantic-tag-cluster'), // Name
+            array( 'description' => __( 'Displays semantic internal linking buttons for related content.', 'semantic-tag-cluster' ), ) // Args
+        );
+    }
+
+    // Widget ön yüz çıktısı
+    public function widget( $args, $instance ) {
+        // Eklenti ayarlarını al
+        $options = get_option('stc_settings');
+        $link_post_type = isset($options['link_post_type']) ? $options['link_post_type'] : 'post';
+        $link_category = isset($options['link_category']) && !empty($options['link_category']) ? intval($options['link_category']) : null;
+        $button_count = isset($options['button_count']) ? intval($options['button_count']) : 3;
+
+        // Widget başlığını al (ve temizle)
+        $title = apply_filters( 'widget_title', $instance['title'], $instance, $this->id_base );
+
+        echo $args['before_widget'];
+        if ( ! empty( $title ) ) {
+            echo $args['before_title'] . $title . $args['after_title'];
+        }
+
+        // Sadece tekil yazı/sayfa görünümlerinde widget'ı göster
+        $enabled_post_types = isset($options['post_types']) ? (array) $options['post_types'] : array();
+        if (is_singular($enabled_post_types)) {
+            $current_post_id = get_the_ID();
+            if ($current_post_id) {
+                 // stc_generate_semantic_buttons_html fonksiyonunu kullanarak buton HTML'ini al
+                $buttons_html = stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $link_category, $button_count);
+                echo $buttons_html;
+            }
+        }
+
+        echo $args['after_widget'];
+    }
+
+    // Widget Admin Formu
+    public function form( $instance ) {
+        $title = isset( $instance['title'] ) ? $instance['title'] : __( 'Related Content', 'semantic-tag-cluster' );
+        ?>
+        <p>
+        <label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php _e( esc_html__( 'Title:', 'semantic-tag-cluster' ) ); ?></label>
+        <input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>">
+        </p>
+        <p><?php _e('Widget settings are configured in the plugin settings page.', 'semantic-tag-cluster'); ?></p>
+        <?php
+    }
+
+    // Widget ayarlarını kaydetme
+    public function update( $new_instance, $old_instance ) {
+        $instance = array();
+        $instance['title'] = ( ! empty( $new_instance['title'] ) ) ? sanitize_text_field( $new_instance['title'] ) : '';
+        return $instance;
+    }
+}
+
+// Widget'ı kaydet
+function stc_register_semantic_buttons_widget() {
+    register_widget( 'stc_semantic_buttons_widget' );
+}
+add_action( 'widgets_init', 'stc_register_semantic_buttons_widget' );
