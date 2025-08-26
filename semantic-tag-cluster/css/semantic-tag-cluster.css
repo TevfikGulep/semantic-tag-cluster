@@ -1,0 +1,26 @@
+.semantic-tag-cluster-buttons {
+    margin-top: 15px; /* H1 altından biraz boşluk bırak */
+    margin-bottom: 15px;
+    display: flex; /* Butonları yan yana hizala */
+    flex-wrap: wrap; /* Ekran küçüldüğünde alt satıra insinler */
+    gap: 10px; /* Butonlar arasına boşluk bırak */
+}
+
+.semantic-tag-cluster-button {
+    display: inline-block;
+    padding: 8px 15px;
+    border: 2px solid; /* Kenar çizgisi */
+    border-radius: 20px; /* Yuvarlak kenarlar */
+    text-decoration: none; /* Alt çizgiyi kaldır */
+    background-color: transparent; /* İçini boş yap */
+    /* Renkler için CSS değişkeni kullanılabilir veya h1 rengi manuel eşleştirilebilir */
+    color: inherit; /* Yazı rengini kapsayıcı elementten (veya h1'den) al */
+    border-color: inherit; /* Çizgi rengini kapsayıcı elementten (veya h1'den) al */
+    font-size: 1rem;
+    transition: all 0.3s ease; /* Hover efekti için yumuşak geçiş */
+}
+
+.semantic-tag-cluster-button:hover {
+    background-color: currentColor; /* Hover'da rengi doldur */
+    color: #fff; /* Yazı rengini beyaza çevir */
+}

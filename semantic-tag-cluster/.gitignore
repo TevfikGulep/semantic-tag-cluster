@@ -1,0 +1,17 @@
+gitignore
+# WordPress specific ignores
+/wp-content/upgrade/
+/wp-content/backup*/
+/wp-content/cache/
+/wp-content/uploads/
+/wp-content/blogs.dir/
+/wp-content/languages/
+
+# Configuration files
+*.env
+
+# Composer
+/vendor/
+
+# Logs
+*.log
