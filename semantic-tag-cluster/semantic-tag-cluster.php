@@ -168,29 +168,6 @@ function stc_button_count_callback() {
     <?php
 }
 
-// Butonları içeriğe eklemek için filtre ekle
-add_filter('the_content', 'stc_add_buttons_to_content');
-
-function stc_add_buttons_to_content($content) {
-    // Eklenti ayarlarını al
-    $options = get_option('stc_settings');
-    $enabled_post_types = isset($options['post_types']) ? (array) $options['post_types'] : array();
-
-    // Eğer şu anki gönderi tipi ayarlarda seçili değilse, içeriği değiştirmeden geri dön
-    if (!in_array(get_post_type(), $enabled_post_types)) {
-        return $content;
-    }
-
-    // Eğer içerikte h1 başlığı varsa
-    if (preg_match('/<h1.*?>(.*?)<\/h1>/is', $content, $matches)) {
-        $h1_tag = $matches[0];
-        // H1 başlığının hemen altına butonlar için yer tutucu ekle
-        $content = str_replace($h1_tag, $h1_tag . '<div class="semantic-tag-cluster-buttons"></div>', $content);
-    }
-
-    return $content;
-}
-
 // İçeriğe butonları eklemek için filtre ekle
 add_filter('the_content', 'stc_add_buttons_to_content');
 
