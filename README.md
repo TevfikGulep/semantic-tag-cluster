@@ -67,4 +67,4 @@ Hersel sorunla karşılaşırsanız veya geliştirme önerileriniz olursa, lütf
 
 ---
 
-**© 2024 Tevfik Gülep. Tüm hakları saklıdır.**
+**© 2025 Tevfik Gülep. Tüm hakları saklıdır.**
