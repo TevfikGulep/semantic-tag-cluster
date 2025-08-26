@@ -168,11 +168,24 @@ function stc_button_count_callback() {
     <?php
 }
 
-// İçeriğe butonları eklemek için filtre ekle
-add_filter('the_content', 'stc_add_buttons_to_content');
+// Output buffering'i başlat
+add_action('template_redirect', 'stc_start_output_buffer');
+function stc_start_output_buffer() {
+    // Sadece tekil yazı/sayfa ve ayarlarda seçili gönderi tiplerinde buffer başlat
+    $options = get_option('stc_settings');
+    $enabled_post_types = isset($options['post_types']) ? (array) $options['post_types'] : array();
 
-function stc_add_buttons_to_content($content) {
-    error_log('stc_add_buttons_to_content fonksiyonu çalışıyor.'); // Fonksiyonun başında
+    // is_singular() fonksiyonu, tekil bir gönderi veya sayfa görüntülendiğinde true döner.
+    // Parametre olarak gönderi tipleri dizisi alabilir.
+    if (is_singular($enabled_post_types)) {
+        ob_start('stc_process_page_output');
+    }
+}
+
+// Çıktıyı yakala ve işleme
+function stc_process_page_output($buffer) {
+    error_log('stc_process_page_output fonksiyonu çalışıyor.');
+
     // Eklenti ayarlarını al
     $options = get_option('stc_settings');
     $enabled_post_types = isset($options['post_types']) ? (array) $options['post_types'] : array();
@@ -180,18 +193,42 @@ function stc_add_buttons_to_content($content) {
     $link_category = isset($options['link_category']) && !empty($options['link_category']) ? intval($options['link_category']) : null;
     $button_count = isset($options['button_count']) ? intval($options['button_count']) : 3;
 
-    // Eğer şu anki gönderi tipi ayarlarda seçili değilse, içeriği değiştirmeden geri dön
+    // is_singular() kontrolü add_action hook'unda zaten yapıldığı için burada teorik olarak tekrar kontrol etmeye gerek yok
+    // ama garanti olması açısından eklenti içerisinde bir koruma olarak kalabilir.
     if (!in_array(get_post_type(), $enabled_post_types)) {
-        error_log('Mevcut gönderi tipi (' . get_post_type() . ') seçili tipler arasında değil. Fonksiyon erken bitiyor.');
-        return $content;
+        error_log('OB: Mevcut gönderi tipi (' . get_post_type() . ') seçili tipler arasında değil. Tampon işlenmiyor.');
+        return $buffer;
     }
 
-    // Şu anki gönderi ID'sini al
     $current_post_id = get_the_ID();
     if (!$current_post_id) {
-        error_log('Mevcut gönderi ID\'si alınamadı. Fonksiyon erken bitiyor.');
-        return $content;
+        error_log('OB: Mevcut gönderi ID'si alınamadı. Butonlar eklenmiyor.');
+        return $buffer;
     }
+
+    $buttons_html = stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $link_category, $button_count);
+
+    if (empty($buttons_html)) {
+        error_log('OB: Buton HTML'i boş döndü. İçerik değiştirilmiyor.');
+        return $buffer;
+    }
+
+    // Tüm sayfada h1 başlığını bul ve butonları altına ekle
+    if (preg_match('/<h1.*?>(.*?)<\/h1>/is', $buffer, $matches)) {
+        $h1_tag = $matches[0];
+        $buffer = str_replace($h1_tag, $h1_tag . $buttons_html, $buffer);
+        error_log('OB: H1 başlığı bulundu ve butonlar eklendi.');
+    } else {
+        error_log('OB: H1 başlığı bulunamadı. Butonlar eklenmedi. Sayfa içeriği ilk 500 karakter: ' . substr($buffer, 0, 500));
+    }
+
+    error_log('stc_process_page_output fonksiyonu sona erdi.');
+    return $buffer;
+}
+
+// Butonları oluşturan yardımcı fonksiyon
+function stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $link_category, $button_count) {
+    error_log('stc_generate_semantic_buttons_html fonksiyonu çalışıyor. Current Post ID: ' . $current_post_id);
 
     // Alakalı yazıları bulma sorgusu için argümanlar
     $args = array(
@@ -204,6 +241,7 @@ function stc_add_buttons_to_content($content) {
     // Eğer kategori belirlenmişse sorguya ekle
     if ($link_category) {
         $args['cat'] = $link_category;
+        error_log('Helper: Belirli kategoriye göre filtreleniyor. Kategori ID: ' . $link_category);
     }
 
     // İlgili yazıları sorgula
@@ -212,19 +250,30 @@ function stc_add_buttons_to_content($content) {
 
     // Eğer ilgili yazı yoksa veya sadece şu anki yazı varsa geri dön
     if (empty($related_post_ids)) {
-        error_log('Alakalı yazı bulunamadı. Butonlar oluşturulmuyor.');
-        return $content;
+        error_log('Helper: İlgili gönderi tipi ve kategoride alakalı yazı bulunamadı (mevcut hariç).');
+        return '';
     }
+
+    error_log('Helper: Toplam ' . count($related_post_ids) . ' adet potansiyel alakalı yazı bulundu.');
 
     // Şu anki yazının içeriğini al
     $current_post = get_post($current_post_id);
+    if (!$current_post) {
+        error_log('Helper: Mevcut gönderi nesnesi alınamadı.');
+        return '';
+    }
+    // İçeriği temizle ve kelimelere ayır
     $current_content = strip_tags(strip_shortcodes($current_post->post_content . ' ' . $current_post->post_title));
     $current_content_words = array_unique(preg_split('/\s+/', mb_strtolower($current_content), -1, PREG_SPLIT_NO_EMPTY));
+    error_log('Helper: Mevcut gönderi içeriğindeki benzersiz kelime sayısı: ' . count($current_content_words));
+
 
     // Alakalı yazıların alaka düzeylerini hesapla
     $related_posts_with_score = array();
     foreach ($related_post_ids as $post_id) {
         $post = get_post($post_id);
+        if (!$post) continue; // Geçersiz gönderi ise atla
+
         $post_content = strip_tags(strip_shortcodes($post->post_content . ' ' . $post->post_title));
         $post_content_words = array_unique(preg_split('/\s+/', mb_strtolower($post_content), -1, PREG_SPLIT_NO_EMPTY));
 
@@ -237,6 +286,8 @@ function stc_add_buttons_to_content($content) {
         }
     }
 
+    error_log('Helper: Alaka puanı olan toplam ' . count($related_posts_with_score) . ' adet yazı bulundu.');
+
     // Alaka düzeyine göre sırala (büyükten küçüğe)
     arsort($related_posts_with_score);
 
@@ -245,8 +296,8 @@ function stc_add_buttons_to_content($content) {
 
     // Eğer hiç alakalı yazı bulunamazsa geri dön
     if (empty($top_related_post_ids)) {
-        error_log('Alaka puanı olan alakalı yazı bulunamadı. Butonlar oluşturulmuyor.');
-        return $content;
+        error_log('Helper: Alaka puanı olan alakalı yazı (seçilen buton sayısı kadar) bulunamadı. Butonlar oluşturulmuyor.');
+        return '';
     }
 
     // Buton HTML'ini oluştur
@@ -259,21 +310,11 @@ function stc_add_buttons_to_content($content) {
         }
     }
     $buttons_html .= '</div>';
+    error_log('Helper: Buton HTML'i başarıyla oluşturuldu.');
 
-    // İçerikteki h1 başlığını bul ve butonları altına ekle
-    if (preg_match('/<h1.*?>(.*?)<\/h1>/is', $content, $matches)) {
-        $h1_tag = $matches[0];
-        $content = str_replace($h1_tag, $h1_tag . $buttons_html, $content);
-        error_log('H1 başlığı bulundu ve butonlar eklendi.');
-    } else {
-        error_log('H1 başlığı bulunamadı. Butonlar eklenmedi. İçerik ilk 500 karakter: ' . substr($content, 0, 500)); // İçeriğin bir kısmını logla
-        // Eğer h1 yoksa, içeriğin başına ekleyebiliriz (veya başka bir yere, duruma göre karar verilebilir)
-        // Şimdilik h1 yoksa eklemeyelim.
-    }
-
-    error_log('stc_add_buttons_to_content fonksiyonu sona erdi.'); // Fonksiyonun sonunda
-    return $content;
+    return $buttons_html;
 }
+
 
 // CSS dosyasını yükle
 add_action('wp_enqueue_scripts', 'stc_enqueue_styles');

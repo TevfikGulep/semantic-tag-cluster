@@ -4,11 +4,12 @@
     display: flex; /* Butonları yan yana hizala */
     flex-wrap: wrap; /* Ekran küçüldüğünde alt satıra insinler */
     gap: 10px; /* Butonlar arasına boşluk bırak */
+    justify-content: center;
 }
 
 .semantic-tag-cluster-button {
     display: inline-block;
-    padding: 8px 15px;
+    padding: 5px 10px;
     border: 2px solid; /* Kenar çizgisi */
     border-radius: 20px; /* Yuvarlak kenarlar */
     text-decoration: none; /* Alt çizgiyi kaldır */
@@ -16,7 +17,7 @@
     /* Renkler için CSS değişkeni kullanılabilir veya h1 rengi manuel eşleştirilebilir */
     color: inherit; /* Yazı rengini kapsayıcı elementten (veya h1'den) al */
     border-color: inherit; /* Çizgi rengini kapsayıcı elementten (veya h1'den) al */
-    font-size: 1rem;
+    font-size: 0.7rem;
     transition: all 0.3s ease; /* Hover efekti için yumuşak geçiş */
 }
 
