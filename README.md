@@ -79,4 +79,4 @@ Herhangi bir sorunla karşılaşırsanız veya geliştirme önerileriniz olursa,
 
 ---
 
-**© 2024 Tevfik Gülep. Tüm hakları saklıdır.**
+**© 2025 Tevfik Gülep. Tüm hakları saklıdır.**
