@@ -19,6 +19,7 @@
     border-color: inherit; /* Çizgi rengini kapsayıcı elementten (veya h1'den) al */
     font-size: 0.7rem;
     transition: all 0.3s ease; /* Hover efekti için yumuşak geçiş */
+    text-align: center;
 }
 
 .semantic-tag-cluster-button:hover {
