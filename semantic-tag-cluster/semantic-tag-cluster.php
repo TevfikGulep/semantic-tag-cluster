@@ -172,6 +172,7 @@ function stc_button_count_callback() {
 add_filter('the_content', 'stc_add_buttons_to_content');
 
 function stc_add_buttons_to_content($content) {
+    error_log('stc_add_buttons_to_content fonksiyonu çalışıyor.'); // Fonksiyonun başında
     // Eklenti ayarlarını al
     $options = get_option('stc_settings');
     $enabled_post_types = isset($options['post_types']) ? (array) $options['post_types'] : array();
@@ -181,12 +182,14 @@ function stc_add_buttons_to_content($content) {
 
     // Eğer şu anki gönderi tipi ayarlarda seçili değilse, içeriği değiştirmeden geri dön
     if (!in_array(get_post_type(), $enabled_post_types)) {
+        error_log('Mevcut gönderi tipi (' . get_post_type() . ') seçili tipler arasında değil. Fonksiyon erken bitiyor.');
         return $content;
     }
 
     // Şu anki gönderi ID'sini al
     $current_post_id = get_the_ID();
     if (!$current_post_id) {
+        error_log('Mevcut gönderi ID\'si alınamadı. Fonksiyon erken bitiyor.');
         return $content;
     }
 
@@ -209,6 +212,7 @@ function stc_add_buttons_to_content($content) {
 
     // Eğer ilgili yazı yoksa veya sadece şu anki yazı varsa geri dön
     if (empty($related_post_ids)) {
+        error_log('Alakalı yazı bulunamadı. Butonlar oluşturulmuyor.');
         return $content;
     }
 
@@ -241,6 +245,7 @@ function stc_add_buttons_to_content($content) {
 
     // Eğer hiç alakalı yazı bulunamazsa geri dön
     if (empty($top_related_post_ids)) {
+        error_log('Alaka puanı olan alakalı yazı bulunamadı. Butonlar oluşturulmuyor.');
         return $content;
     }
 
@@ -259,11 +264,14 @@ function stc_add_buttons_to_content($content) {
     if (preg_match('/<h1.*?>(.*?)<\/h1>/is', $content, $matches)) {
         $h1_tag = $matches[0];
         $content = str_replace($h1_tag, $h1_tag . $buttons_html, $content);
+        error_log('H1 başlığı bulundu ve butonlar eklendi.');
     } else {
+        error_log('H1 başlığı bulunamadı. Butonlar eklenmedi. İçerik ilk 500 karakter: ' . substr($content, 0, 500)); // İçeriğin bir kısmını logla
         // Eğer h1 yoksa, içeriğin başına ekleyebiliriz (veya başka bir yere, duruma göre karar verilebilir)
         // Şimdilik h1 yoksa eklemeyelim.
     }
 
+    error_log('stc_add_buttons_to_content fonksiyonu sona erdi.'); // Fonksiyonun sonunda
     return $content;
 }
 
