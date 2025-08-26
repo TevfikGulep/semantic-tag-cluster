@@ -1,6 +1,6 @@
 # Semantic Tag Cluster
 
-**Plugin URI:** https://github.com/TevfikGulep/semantic-tag-cluster
+**Plugin URI:** https://github.com/TevfikGulep/semantic-tag-cluster\n
 **Yazar:** Tevfik Gülep
 **Yazar URI:** https://oxigen.team
 **Sürüm:** 1.0.0
