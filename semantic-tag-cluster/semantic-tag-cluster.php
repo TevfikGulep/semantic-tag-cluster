@@ -232,7 +232,7 @@ function stc_process_page_output($buffer) {
     $enabled_post_types = isset($options['post_types']) ? (array) $options['post_types'] : array();
     $link_post_type = isset($options['link_post_type']) ? $options['link_post_type'] : 'post';
     $link_category = isset($options['link_category']) && !empty($options['link_category']) ? intval($options['link_category']) : null;
-    $button_count = isset($options['button']) ? intval($options['button_count']) : 3;
+    $button_count = isset($options['button_count']) ? intval($options['button_count']) : 3;
 
     // is_singular() kontrolü add_action hook'unda zaten yapıldığı için burada teorik olarak tekrar kontrol etmeye gerek yok
     // ama garanti olması açısından eklenti içerisinde bir koruma olarak kalabilir.
@@ -294,7 +294,7 @@ function stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $
     $current_content_words = array_unique(preg_split('/\s+/', mb_strtolower($current_content), -1, PREG_SPLIT_NO_EMPTY));
 
 
-    // Alakalı yazıların alaka düzeylerini hesapla
+    // Alakalı yazuların alaka düzeylerini hesapla
     $related_posts_with_score = array();
     foreach ($related_post_ids as $post_id) {
         $post = get_post($post_id);
@@ -369,9 +369,10 @@ class stc_semantic_buttons_widget extends WP_Widget {
         // Widget başlığını al (ve temizle)
         $title = apply_filters( 'widget_title', $instance['title'], $instance, $this->id_base );
 
-        echo $args['before_widget'];
+        // Çıktıları kaçırma fonksiyonları ile güvenli hale getir
+        echo wp_kses_post( $args['before_widget'] );
         if ( ! empty( $title ) ) {
-            echo $args['before_title'] . $title . $args['after_title'];
+            echo wp_kses_post( $args['before_title'] ) . esc_html( $title ) . wp_kses_post( $args['after_title'] );
         }
 
         // Sadece tekil yazı/sayfa görünümlerinde widget'ı göster
@@ -381,11 +382,12 @@ class stc_semantic_buttons_widget extends WP_Widget {
             if ($current_post_id) {
                  // stc_generate_semantic_buttons_html fonksiyonunu kullanarak buton HTML'ini al
                 $buttons_html = stc_generate_semantic_buttons_html($current_post_id, $link_post_type, $link_category, $button_count);
-                echo $buttons_html;
+                // Buton HTML'ini kaçırırken, a ve div gibi izin verilen etiketleri korumak için wp_kses_post kullanabiliriz.
+                echo wp_kses_post( $buttons_html );
             }
         }
 
-        echo $args['after_widget'];
+        echo wp_kses_post( $args['after_widget'] );
     }
 
     // Widget Admin Formu
@@ -393,10 +395,10 @@ class stc_semantic_buttons_widget extends WP_Widget {
         $title = isset( $instance['title'] ) ? $instance['title'] : __( 'Related Content', 'semantic-tag-cluster' );
         ?>
         <p>
-        <label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php _e( esc_html__( 'Title:', 'semantic-tag-cluster' ) ); ?></label>
+        <label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php esc_html_e( 'Title:', 'semantic-tag-cluster' ); ?></label>
         <input class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>" type="text" value="<?php echo esc_attr( $title ); ?>">
         </p>
-        <p><?php _e('Widget settings are configured in the plugin settings page.', 'semantic-tag-cluster'); ?></p>
+        <p><?php esc_html_e('Widget settings are configured in the plugin settings page.', 'semantic-tag-cluster'); ?></p>
         <?php
     }
 
